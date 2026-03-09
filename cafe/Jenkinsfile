@@ -22,7 +22,7 @@ pipeline {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     //sh 'pip3 install flake8'
-                    sh 'flake8 frontend/ order-service/ kitchen-service/ --max-line-length=120 --ignore=E501,W503 || true'
+                    //sh 'flake8 frontend/ order-service/ kitchen-service/ --max-line-length=120 --ignore=E501,W503 || true'
                 }
             }
         }
