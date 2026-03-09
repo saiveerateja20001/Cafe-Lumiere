@@ -9,6 +9,7 @@ CORS(app)
 # Version Info
 APP_VERSION = "2.0"
 APP_NAME = "Café Lumière v2.0"
+THEME = "Fresh Green & Pink"
 
 # Service URLs
 ORDER_SERVICE_URL = os.getenv('ORDER_SERVICE_URL', 'http://localhost:5001')
@@ -68,17 +69,17 @@ MENU = [
 @app.route('/')
 def index():
     """Customer ordering page"""
-    return render_template('index.html', menu=MENU)
+    return render_template('index.html', menu=MENU, version=APP_VERSION, theme=THEME)
 
 @app.route('/kitchen')
 def kitchen():
     """Kitchen management page"""
-    return render_template('kitchen.html')
+    return render_template('kitchen.html', version=APP_VERSION, theme=THEME)
 
 @app.route('/display')
 def display():
     """Order status display board"""
-    return render_template('display.html')
+    return render_template('display.html', version=APP_VERSION, theme=THEME)
 
 @app.route('/api/menu', methods=['GET'])
 def get_menu():
