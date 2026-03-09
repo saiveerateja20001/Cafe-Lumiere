@@ -1,0 +1,6 @@
+apiVersion: v2
+name: cafe-lumiere-postgresql
+description: PostgreSQL database for Café Lumière
+type: application
+version: 1.0.0
+appVersion: "15.0"

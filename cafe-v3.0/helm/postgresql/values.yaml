@@ -1,0 +1,40 @@
+# PostgreSQL Configuration for Café Lumière
+
+# PostgreSQL image
+image:
+  registry: docker.io
+  repository: postgres
+  tag: "15-alpine"
+  pullPolicy: IfNotPresent
+
+# Database configuration
+auth:
+  postgresPassword: postgres
+  username: postgres
+  password: postgres
+  database: cafe_lumiere
+
+# Primary configuration
+primary:
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: ""
+  
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 5432
+
+# PostgreSQL configuration
+postgresqlConfiguration:
+  max_connections: "100"
+  shared_buffers: "128MB"

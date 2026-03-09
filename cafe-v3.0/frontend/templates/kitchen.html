@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Café Lumière - Kitchen</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>👨‍🍳 Kitchen Management</h1>
+            <p class="tagline">Café Lumière</p>
+            <nav>
+                <a href="/">Order</a>
+                <a href="/kitchen">Kitchen</a>
+                <a href="/display">Display</a>
+            </nav>
+        </header>
+
+        <main>
+            <div class="kitchen-board">
+                <div class="orders-column">
+                    <h3>📝 New Orders</h3>
+                    <div id="orderedOrders" class="order-list"></div>
+                </div>
+
+                <div class="orders-column">
+                    <h3>👨‍🍳 Preparing</h3>
+                    <div id="preparingOrders" class="order-list"></div>
+                </div>
+
+                <div class="orders-column">
+                    <h3>✅ Ready</h3>
+                    <div id="readyOrders" class="order-list"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='kitchen.js') }}"></script>
+</body>
+</html>

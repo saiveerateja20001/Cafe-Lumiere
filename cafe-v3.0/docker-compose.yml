@@ -1,0 +1,113 @@
+version: '3.8'
+
+# Café Lumière v3.0 - Docker Compose Configuration
+# Modern version with contemporary Teal & Coral design
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: cafe-postgres
+    environment:
+      POSTGRES_DB: cafe_lumiere
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cafe_lumiere"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - cafe-network
+    restart: unless-stopped
+
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    container_name: cafe-order-service
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: cafe_lumiere
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      FLASK_ENV: development
+    ports:
+      - "5001:5001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5001/health', timeout=2)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - cafe-network
+    restart: unless-stopped
+
+  kitchen-service:
+    build:
+      context: ./kitchen-service
+      dockerfile: Dockerfile
+    container_name: cafe-kitchen-service
+    environment:
+      ORDER_SERVICE_URL: http://order-service:5001
+      FLASK_ENV: development
+    ports:
+      - "5002:5002"
+    depends_on:
+      order-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5002/health', timeout=2)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - cafe-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cafe-frontend
+    environment:
+      ORDER_SERVICE_URL: http://order-service:5001
+      KITCHEN_SERVICE_URL: http://kitchen-service:5002
+      FLASK_ENV: development
+    ports:
+      - "5000:5000"
+    depends_on:
+      order-service:
+        condition: service_healthy
+      kitchen-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000', timeout=2)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - cafe-network
+    restart: unless-stopped
+
+networks:
+  cafe-network:
+    driver: bridge
+    name: cafe-lumiere-network
+
+volumes:
+  postgres-data:
+    name: cafe-postgres-data
