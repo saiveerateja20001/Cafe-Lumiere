@@ -32,7 +32,7 @@ pipeline {
 
                 stage('Build Frontend') {
                     steps {
-                        dir('frontend') {
+                        dir('cafe/frontend') {
                             sh "docker build -t ${DOCKER_REGISTRY}/cafe-lumiere-frontend:${IMAGE_TAG} ."
                         }
                     }
@@ -40,7 +40,7 @@ pipeline {
 
                 stage('Build Order Service') {
                     steps {
-                        dir('order-service') {
+                        dir('cafeorder-service') {
                             sh "docker build -t ${DOCKER_REGISTRY}/cafe-lumiere-order-service:${IMAGE_TAG} ."
                         }
                     }
@@ -48,7 +48,7 @@ pipeline {
 
                 stage('Build Kitchen Service') {
                     steps {
-                        dir('kitchen-service') {
+                        dir('cafe/kitchen-service') {
                             sh "docker build -t ${DOCKER_REGISTRY}/cafe-lumiere-kitchen-service:${IMAGE_TAG} ."
                         }
                     }
