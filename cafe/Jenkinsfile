@@ -1,0 +1,125 @@
+pipeline {
+    agent any
+
+    options {
+        timeout(time: 60, unit: 'MINUTES')  // Global timeout
+    }
+
+    environment {
+        DOCKER_REGISTRY = 'docker.io/saiveerateja'  // Replace 'your-dockerhub-username' with your actual Docker Hub username
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    sh 'pip install flake8'
+                    sh 'flake8 frontend/ order-service/ kitchen-service/ --max-line-length=120 --ignore=E501,W503' || true
+                }
+            }
+        }
+
+        stage('Build Images') {
+            steps {
+                parallel {
+                    stage('Build Frontend') {
+                        steps {
+                            dir('frontend') {
+                                sh 'docker build -t ${DOCKER_REGISTRY}/cafe-lumiere-frontend:${IMAGE_TAG} .'
+                            }
+                        }
+                    }
+                    stage('Build Order Service') {
+                        steps {
+                            dir('order-service') {
+                                sh 'docker build -t ${DOCKER_REGISTRY}/cafe-lumiere-order-service:${IMAGE_TAG} .'
+                            }
+                        }
+                    }
+                    stage('Build Kitchen Service') {
+                        steps {
+                            dir('kitchen-service') {
+                                sh 'docker build -t ${DOCKER_REGISTRY}/cafe-lumiere-kitchen-service:${IMAGE_TAG} .'
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Security Scan') {
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    sh 'trivy image --exit-code 0 --no-progress --format table ${DOCKER_REGISTRY}/cafe-frontend:${IMAGE_TAG}'
+                    sh 'trivy image --exit-code 0 --no-progress --format table ${DOCKER_REGISTRY}/cafe-order-service:${IMAGE_TAG}'
+                    sh 'trivy image --exit-code 0 --no-progress --format table ${DOCKER_REGISTRY}/cafe-kitchen-service:${IMAGE_TAG}'
+                    script {
+                        def scannerHome = tool 'SonarQubeScanner'
+                        withSonarQubeEnv('SonarQube') {
+                            sh "${scannerHome}/bin/sonar-scanner"
+                        }
+                        waitForQualityGate abortPipeline: true
+                    }
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                timeout(time: 15, unit: 'MINUTES') {
+                    sh 'docker-compose up -d --build'
+                    // Add specific test commands here, e.g., sh 'docker-compose exec -T frontend python -m pytest tests/ --tb=short'
+                    sh 'docker-compose down'
+                }
+            }
+        }
+
+        stage('Push Images') {
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    withCredentials([usernamePassword(credentialsId: 'docker-registry-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin ${DOCKER_REGISTRY}'
+                    }
+                    sh 'docker push ${DOCKER_REGISTRY}/cafe-frontend:${IMAGE_TAG}'
+                    sh 'docker push ${DOCKER_REGISTRY}/cafe-order-service:${IMAGE_TAG}'
+                    sh 'docker push ${DOCKER_REGISTRY}/cafe-kitchen-service:${IMAGE_TAG}'
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                //timeout(time: 5, unit: 'MINUTES') {
+                    // Update deployments with new image tags
+                    //sh 'sed -i "s|image:.*|image: ${DOCKER_REGISTRY}/cafe-frontend:${IMAGE_TAG}|g" k8s/deployments.yaml'
+                    //sh 'sed -i "s|image:.*|image: ${DOCKER_REGISTRY}/cafe-order-service:${IMAGE_TAG}|g" k8s/deployments.yaml'
+                    //sh 'sed -i "s|image:.*|image: ${DOCKER_REGISTRY}/cafe-kitchen-service:${IMAGE_TAG}|g" k8s/deployments.yaml'
+                    //sh 'kubectl apply -f k8s/deployments.yaml'
+                //}
+            }
+        }
+    }
+
+    post {
+        always {
+            sh 'docker-compose down || true'
+            sh 'docker system prune -f'  // Clean up dangling images
+            cleanWs()
+        }
+        success {
+            echo 'Pipeline succeeded!'
+            // mail to: 'team@example.com', subject: 'Build Success', body: 'Pipeline passed.'
+        }
+        failure {
+            echo 'Pipeline failed!'
+            // slackSend channel: '#ci-cd', message: 'Build failed!'
+        }
+    }
+}
