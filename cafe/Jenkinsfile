@@ -40,7 +40,7 @@ pipeline {
 
                 stage('Build Order Service') {
                     steps {
-                        dir('cafeorder-service') {
+                        dir('cafe/order-service') {
                             sh "docker build -t ${DOCKER_REGISTRY}/cafe-lumiere-order-service:${IMAGE_TAG} ."
                         }
                     }
